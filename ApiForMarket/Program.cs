@@ -71,11 +71,9 @@ namespace ApiForMarket
 
             var app = builder.Build();
 
-            if (app.Environment.IsDevelopment())
-            {
+
                 app.MapOpenApi();
                 app.MapScalarApiReference("/docs");
-            }
 
             var contentRootPath = app.Environment.ContentRootPath;
             var uploadsPath = Path.Combine(contentRootPath, "uploads");
