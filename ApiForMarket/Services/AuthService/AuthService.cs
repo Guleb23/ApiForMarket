@@ -119,6 +119,8 @@ namespace ApiForMarket.Services.AuthService
 
         private async Task<User?> ValidateRefreshTokenAsync(Guid userId, string refreshToken)
         {
+            if(Guid.Empty == userId) return null;
+
             var user = await _dbcontext.Users.FindAsync(userId);
 
             if (user == null ||
