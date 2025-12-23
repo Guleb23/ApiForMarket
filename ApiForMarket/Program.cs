@@ -107,6 +107,11 @@ namespace ApiForMarket
 
             app.MapControllers();
 
+            app.MapGet("/", () =>
+            {
+                return "Servier is running!!!";
+            });
+
             app.Run();
         }
     }
