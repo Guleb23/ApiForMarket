@@ -1,0 +1,15 @@
+services:
+  api:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    volumes:
+      - ./wwwroot:/app/wwwroot
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=217.198.13.126:5432;Database=default_db;Username=gen_user;Password=5%+VMtWrDrGWm#
+
+volumes:
+  postgres-data:
