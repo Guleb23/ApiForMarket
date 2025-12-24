@@ -1,0 +1,179 @@
+import ShopList from '../components/ui/ShopList'
+import { useEffect, useState } from 'react'
+import { getShops } from '../api/shops'
+
+const Shops = () => {
+    const [shops, setShops] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState(null)
+    const [pagination, setPagination] = useState({
+        page: 1,
+        pageSize: 10,
+        totalCount: 0,
+    })
+
+    const fetchShops = async (page = 1, pageSize = 10) => {
+        try {
+            setLoading(true)
+            setError(null)
+
+            const response = await getShops(page, pageSize)
+            const data = response.data
+
+            setShops(data.items || [])
+            setPagination({
+                page: data.page || page,
+                pageSize: data.pageSize || pageSize,
+                totalCount: data.totalCount || 0,
+            })
+        } catch (err) {
+            setError(
+                err.response?.data?.message ||
+                err.message ||
+                'Ошибка при загрузке магазинов'
+            )
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchShops(pagination.page, pagination.pageSize)
+    }, [pagination.page, pagination.pageSize])
+
+    const handlePageChange = (newPage) => {
+        setPagination((prev) => ({ ...prev, page: newPage }))
+    }
+
+    const handlePageSizeChange = (newPageSize) => {
+        setPagination((prev) => ({
+            ...prev,
+            pageSize: newPageSize,
+            page: 1,
+        }))
+    }
+
+    const handleRetry = () => {
+        fetchShops(pagination.page, pagination.pageSize)
+    }
+
+    if (loading && shops.length === 0) {
+        return (
+            <div className="flex items-center justify-center py-24 text-gray-500">
+                Загрузка магазинов...
+            </div>
+        )
+    }
+
+    if (error && shops.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center gap-4 py-24">
+                <p className="text-red-600">{error}</p>
+                <button
+                    onClick={handleRetry}
+                    className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 transition"
+                >
+                    Попробовать снова
+                </button>
+            </div>
+        )
+    }
+
+    return (
+        <div className="mx-auto max-w-7xl px-8 py-8 bg-gray-50">
+            {/* Header */}
+            <div className="mb-6 flex items-center justify-between">
+                <h1 className="text-2xl font-semibold text-gray-900">
+                    Магазины
+                </h1>
+                <span className="text-sm text-gray-500">
+                    Всего: {pagination.totalCount}
+                </span>
+            </div>
+
+            {/* Errors */}
+            {error && (
+                <div className="mb-6 flex items-center justify-between rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    <span>{error}</span>
+                    <button
+                        onClick={handleRetry}
+                        className="font-medium hover:underline"
+                    >
+                        Обновить
+                    </button>
+                </div>
+            )}
+
+            {/* Content */}
+            <div className="relative">
+                {loading && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/60 backdrop-blur-sm text-sm text-gray-500">
+                        Обновление данных...
+                    </div>
+                )}
+
+                <ShopList shops={shops} />
+            </div>
+
+            {!loading && shops.length === 0 && (
+                <div className="mt-12 text-center text-gray-500">
+                    Магазины не найдены
+                </div>
+            )}
+
+            {/* Pagination */}
+            {pagination.totalCount > 0 && (
+                <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t pt-6">
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => handlePageChange(pagination.page - 1)}
+                            disabled={pagination.page <= 1 || loading}
+                            className="rounded-lg border px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                            ← Назад
+                        </button>
+
+                        <button
+                            onClick={() => handlePageChange(pagination.page + 1)}
+                            disabled={
+                                pagination.page >=
+                                Math.ceil(
+                                    pagination.totalCount / pagination.pageSize
+                                ) || loading
+                            }
+                            className="rounded-lg border px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                            Вперёд →
+                        </button>
+                    </div>
+
+                    <div className="text-sm text-gray-500">
+                        Страница {pagination.page} из{' '}
+                        {Math.ceil(
+                            pagination.totalCount / pagination.pageSize
+                        )}
+                    </div>
+
+                    <div className="flex items-center gap-2 text-sm">
+                        <span className="text-gray-500">На странице:</span>
+                        <select
+                            value={pagination.pageSize}
+                            onChange={(e) =>
+                                handlePageSizeChange(Number(e.target.value))
+                            }
+                            disabled={loading}
+                            className="rounded-lg border px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                            <option value="50">50</option>
+                        </select>
+                    </div>
+                </div>
+            )}
+        </div>
+    )
+}
+
+export default Shops

@@ -1,7 +1,7 @@
 services:
   frontend:
     build:
-      context: ./ReactApp
+      context: ./Front
       dockerfile: Dockerfile
     ports:
       - "5173:3000"
