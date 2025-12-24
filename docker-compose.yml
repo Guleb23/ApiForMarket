@@ -1,7 +1,16 @@
 services:
+  frontend:
+    build:
+      context: ./ReactApp
+      dockerfile: Dockerfile
+    ports:
+      - "5173:3000"
+    networks:
+      - app-network
+
   api:
     build:
-      context: ./
+      context: ./ApiForMarket
       dockerfile: Dockerfile
     volumes:
       - ./wwwroot:/app/wwwroot
@@ -10,6 +19,9 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Host=217.198.13.126:5432;Database=default_db;Username=gen_user;Password=5%+VMtWrDrGWm#
+    networks:
+      - app-network
 
-volumes:
-  postgres-data:
+networks:
+  app-network:
+    driver: bridge

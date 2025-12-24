@@ -53,7 +53,7 @@ namespace ApiForMarket
                     policy.AllowAnyHeader()
                     .AllowCredentials()
                     .AllowAnyMethod()
-                    .WithOrigins("http://localhost:5173", "https://guleb23-frontmarket-d3dd.twc1.net");
+                    .WithOrigins("http://localhost:5173", "https://guleb23-frontmarket-d3dd.twc1.net", "http://62.113.36.15:3000");
                 });
             });
 
@@ -72,8 +72,8 @@ namespace ApiForMarket
             var app = builder.Build();
 
 
-                app.MapOpenApi();
-                app.MapScalarApiReference("/docs");
+            app.MapOpenApi();
+            app.MapScalarApiReference("/docs");
 
             var contentRootPath = app.Environment.ContentRootPath;
             var uploadsPath = Path.Combine(contentRootPath, "uploads");

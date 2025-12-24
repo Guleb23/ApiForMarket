@@ -1,6 +1,8 @@
 # Этап 1: Сборка
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
+
+# Копируем всё из текущей директории (корня)
 COPY . .
 RUN dotnet restore && dotnet publish -c Release -o /app/publish
 
