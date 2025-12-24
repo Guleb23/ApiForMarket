@@ -17,7 +17,7 @@ WORKDIR /app
 COPY --from=build /app/out .
 
 # Копируем папку uploads с фото из исходного кода (если существует)
-COPY --from=build /app/uploads ./uploads/
+COPY --from=build /app/uploads ./ApiForMarket/uploads/
 
 # Создаем директории uploads если их нет в исходном коде
 RUN mkdir -p uploads/shops
