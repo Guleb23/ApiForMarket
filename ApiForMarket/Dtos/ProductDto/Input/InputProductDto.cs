@@ -19,5 +19,7 @@ namespace ApiForMarket.Dtos.ProductDto.Input
         [Required(ErrorMessage = "Product price is required")]
         [Range(0.01, 999999.99, ErrorMessage = "Price must be between 0.01 and 999,999.99")]
         public required decimal Price { get; set; }
+
+        public required List<Guid>? SelectedCategoryIds { get; set; }
     }
 }

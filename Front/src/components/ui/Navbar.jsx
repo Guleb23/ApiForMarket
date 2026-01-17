@@ -6,7 +6,7 @@ const Navbar = () => {
     const location = useLocation()
 
     return (
-        <header className="bg-purple-50 shadow-sm">
+        <header className="bg-purple-50 shadow-sm z-50">
             <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
 
                 {/* Навигация слева */}
@@ -42,7 +42,7 @@ const Navbar = () => {
                     </div>
 
                     {/* Dropdown */}
-                    <div className="absolute right-0 mt-2 w-40 bg-white text-gray-800 rounded-md shadow-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                    <div className="absolute right-0 mt-2 w-40 bg-white text-gray-800 rounded-md shadow-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                         <Link
                             to="/profile"
                             className="block px-4 py-2 text-sm hover:bg-purple-50 rounded-t-md"

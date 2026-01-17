@@ -22,6 +22,146 @@ namespace ApiForMarket.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("ApiForMarket.Models.Categories", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("CategoriesId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("ParentId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoriesId");
+
+                    b.ToTable("Categories");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("e309cd57-73dc-4068-b236-8b4286447192"),
+                            Name = "СоцСети"
+                        },
+                        new
+                        {
+                            Id = new Guid("58f83966-63e2-4433-9753-fbf098405f2f"),
+                            Name = "Игры"
+                        },
+                        new
+                        {
+                            Id = new Guid("deeae385-f131-4a61-bcdc-a51084b19e6b"),
+                            Name = "Telegram",
+                            ParentId = new Guid("e309cd57-73dc-4068-b236-8b4286447192")
+                        },
+                        new
+                        {
+                            Id = new Guid("630542e8-9ed6-4792-a982-503206c42102"),
+                            Name = "pubg",
+                            ParentId = new Guid("58f83966-63e2-4433-9753-fbf098405f2f")
+                        });
+                });
+
+            modelBuilder.Entity("ApiForMarket.Models.Order", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("TotalPrice")
+                        .HasColumnType("numeric");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Orders");
+                });
+
+            modelBuilder.Entity("ApiForMarket.Models.OrderChatMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SenderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Messages");
+                });
+
+            modelBuilder.Entity("ApiForMarket.Models.OrderItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ProductImage")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProductName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("ProductPrice")
+                        .HasColumnType("numeric");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ShopName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("ShopId");
+
+                    b.ToTable("OrderItems");
+                });
+
             modelBuilder.Entity("ApiForMarket.Models.Product", b =>
                 {
                     b.Property<Guid>("Id")
@@ -54,6 +194,27 @@ namespace ApiForMarket.Migrations
                     b.HasIndex("ShopId");
 
                     b.ToTable("Products");
+                });
+
+            modelBuilder.Entity("ApiForMarket.Models.ProductCategories", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("ProductCategories");
                 });
 
             modelBuilder.Entity("ApiForMarket.Models.Shop", b =>
@@ -118,6 +279,51 @@ namespace ApiForMarket.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("ApiForMarket.Models.Categories", b =>
+                {
+                    b.HasOne("ApiForMarket.Models.Categories", null)
+                        .WithMany("Children")
+                        .HasForeignKey("CategoriesId");
+                });
+
+            modelBuilder.Entity("ApiForMarket.Models.Order", b =>
+                {
+                    b.HasOne("ApiForMarket.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ApiForMarket.Models.OrderItem", b =>
+                {
+                    b.HasOne("ApiForMarket.Models.Order", "Order")
+                        .WithMany("Items")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ApiForMarket.Models.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ApiForMarket.Models.Shop", "Shop")
+                        .WithMany()
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+
+                    b.Navigation("Product");
+
+                    b.Navigation("Shop");
+                });
+
             modelBuilder.Entity("ApiForMarket.Models.Product", b =>
                 {
                     b.HasOne("ApiForMarket.Models.Shop", "Shop")
@@ -129,6 +335,25 @@ namespace ApiForMarket.Migrations
                     b.Navigation("Shop");
                 });
 
+            modelBuilder.Entity("ApiForMarket.Models.ProductCategories", b =>
+                {
+                    b.HasOne("ApiForMarket.Models.Categories", "Category")
+                        .WithMany("ProductCategories")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ApiForMarket.Models.Product", "Product")
+                        .WithMany("Categories")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("ApiForMarket.Models.Shop", b =>
                 {
                     b.HasOne("ApiForMarket.Models.User", "User")
@@ -138,6 +363,23 @@ namespace ApiForMarket.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ApiForMarket.Models.Categories", b =>
+                {
+                    b.Navigation("Children");
+
+                    b.Navigation("ProductCategories");
+                });
+
+            modelBuilder.Entity("ApiForMarket.Models.Order", b =>
+                {
+                    b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("ApiForMarket.Models.Product", b =>
+                {
+                    b.Navigation("Categories");
                 });
 
             modelBuilder.Entity("ApiForMarket.Models.Shop", b =>

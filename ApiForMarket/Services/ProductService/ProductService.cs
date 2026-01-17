@@ -17,19 +17,15 @@ namespace ApiForMarket.Services.ProductService
             _dbContext = dBContext;
         }
 
-        public async Task<OutputProductDTO?> CreateProduct(DataForService product, Guid shopId)
+        public async Task<OutputProductDTO?> CreateProduct(DataForService product, Guid shopId, List<Guid>? selectedCategories)
         {
-            if (product == null)
+            if (product == null || shopId == Guid.Empty)
             {
                 return null;
+
             }
 
-            if (shopId == Guid.Empty)
-            {
-                return null;
-            }
-
-            var newProduct = new Product()
+            var newProduct = new Product
             {
                 Id = Guid.NewGuid(),
                 Name = product.Name,
@@ -37,30 +33,41 @@ namespace ApiForMarket.Services.ProductService
                 Price = product.Price,
                 IsModerated = Moderated.OnModeration,
                 Img = product.Img,
-                ShopId = shopId
+                ShopId = shopId,
+                Categories = new List<ProductCategories>() 
             };
 
-            try
+            if (selectedCategories != null && selectedCategories.Any())
             {
-                _dbContext.Products.Add(newProduct);
-                await _dbContext.SaveChangesAsync();
-                return new OutputProductDTO()
+                var validCategoryIds = await _dbContext.Categories
+                    .Where(c => selectedCategories.Contains(c.Id))
+                    .Select(c => c.Id)
+                    .ToListAsync();
+
+                foreach (var categoryId in validCategoryIds)
                 {
-                    Id = newProduct.Id,
-                    Name = newProduct.Name,
-                    Description = newProduct.Description,
-                    Price = newProduct.Price,
-                    Img = newProduct.Img,
-                    IsModerated = Moderated.OnModeration,
-
-                };
+                    newProduct.Categories.Add(new ProductCategories
+                    {
+                        ProductId = newProduct.Id,
+                        CategoryId = categoryId
+                    });
+                }
             }
-            catch (Exception ex)
+
+            _dbContext.Products.Add(newProduct);
+            await _dbContext.SaveChangesAsync();
+
+            return new OutputProductDTO
             {
-                return null;
-            }
-
+                Id = newProduct.Id,
+                Name = newProduct.Name,
+                Description = newProduct.Description,
+                Price = newProduct.Price,
+                Img = newProduct.Img,
+                IsModerated = Moderated.OnModeration,
+            };
         }
+
 
         public async Task<PagedResult<OutputProductDTO>> GetModeratedProductsAsync(int page, int pageSize)
         {
@@ -188,8 +195,6 @@ namespace ApiForMarket.Services.ProductService
             {
                 var product = await _dbContext.Products
                     .FirstOrDefaultAsync(p => p.Id == productId);
-
-
                 if (product == null)
                 {
                     return false; 
@@ -210,6 +215,11 @@ namespace ApiForMarket.Services.ProductService
             }
 
 
+        }
+
+        public Task<bool> UpdateProduct(DataForService product, Guid shopId, List<Guid> selectedCategories, Guid userId)
+        {
+            throw new NotImplementedException();
         }
     }
 }

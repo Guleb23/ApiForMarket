@@ -1,7 +1,10 @@
 using ApiForMarket.Data;
 using ApiForMarket.Models;
 using ApiForMarket.Services.AuthService;
+using ApiForMarket.Services.CategoryService;
 using ApiForMarket.Services.FileService;
+using ApiForMarket.Services.OrderChatService;
+using ApiForMarket.Services.OrderServices;
 using ApiForMarket.Services.PasswordHasherService;
 using ApiForMarket.Services.ProductService;
 using ApiForMarket.Services.ShopService;
@@ -44,6 +47,32 @@ namespace ApiForMarket
                             builder.Configuration["AppSettings:Token"]!)),
 
                     };
+                    opt.Events = new JwtBearerEvents
+                    {
+                        OnMessageReceived = context =>
+                        {
+                            var path = context.HttpContext.Request.Path;
+                            if (path.StartsWithSegments("/hubs/order-chat"))
+                            {
+                                // Проверяем токен в query string
+                                var accessToken = context.Request.Query["access_token"];
+                                if (!string.IsNullOrEmpty(accessToken))
+                                {
+                                    context.Token = accessToken;
+                                }
+                                // Если токена нет в query, проверяем заголовок Authorization
+                                else
+                                {
+                                    var authHeader = context.Request.Headers["Authorization"].ToString();
+                                    if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
+                                    {
+                                        context.Token = authHeader.Substring("Bearer ".Length).Trim();
+                                    }
+                                }
+                            }
+                            return Task.CompletedTask;
+                        }
+                    };
                 });
 
             builder.Services.AddCors(opt =>
@@ -56,16 +85,20 @@ namespace ApiForMarket
                     .WithOrigins("http://localhost:5173", "https://guleb23-frontmarket-d3dd.twc1.net", "http://62.113.36.15:3000");
                 });
             });
+            builder.Services.AddSignalR();
 
             builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
+            builder.Services.AddScoped<IOrderChatService, OrderChatService>();
             builder.Services.AddScoped<ITokenService, TokenService>();
+            builder.Services.AddScoped<ICategoryService, CategoryService>();
             builder.Services.AddScoped<IUserService, UserService>();
             builder.Services.AddScoped<IProductService, ProductService>();
             builder.Services.AddScoped<IFileService, FileService>();
             builder.Services.AddScoped<IPasswordHasherService, PasswordHasherService>();
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<IShopService, ShopService>();
+            builder.Services.AddScoped<IOrderService, OrderService>();
             builder.Services.AddControllers();
             builder.Services.AddOpenApi();
 
@@ -104,6 +137,7 @@ namespace ApiForMarket
 
             app.UseAuthentication();
             app.UseAuthorization();
+            app.MapHub<OrderChatHub>("/hubs/order-chat");
 
             app.MapControllers();
 

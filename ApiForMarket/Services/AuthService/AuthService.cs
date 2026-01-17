@@ -114,7 +114,7 @@ namespace ApiForMarket.Services.AuthService
 
             await _dbcontext.SaveChangesAsync();
 
-            return user.RefreshToken;
+            return refRoken;
         }
 
         private async Task<User?> ValidateRefreshTokenAsync(Guid userId, string refreshToken)

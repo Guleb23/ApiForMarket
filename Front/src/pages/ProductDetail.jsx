@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { getProductById } from "../api/products"
+import { createOrder } from "../api/order"
 import { FiArrowLeft } from "react-icons/fi"
 
 const ProductDetail = () => {
@@ -10,6 +11,8 @@ const ProductDetail = () => {
     const [product, setProduct] = useState(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
+    const [buying, setBuying] = useState(false)
+    const [buyError, setBuyError] = useState(null)
 
     const fetchProduct = async (id) => {
         try {
@@ -29,6 +32,23 @@ const ProductDetail = () => {
     useEffect(() => {
         if (productId) fetchProduct(productId)
     }, [productId])
+
+    const handleBuy = async () => {
+        if (!product) return
+        setBuying(true)
+        setBuyError(null)
+
+        try {
+            const response = await createOrder({ productId: product.id })
+            console.log("Order created:", response.data)
+            navigate(`/order/${response.data.orderId}`)
+        } catch (err) {
+            console.error(err)
+            setBuyError(err.response?.data || "Ошибка при покупке")
+        } finally {
+            setBuying(false)
+        }
+    }
 
     if (loading) {
         return (
@@ -79,12 +99,18 @@ const ProductDetail = () => {
                         <p className="mt-4 text-gray-600">{product.description}</p>
                     </div>
 
-                    <div className="mt-6 flex items-center justify-between">
+                    <div className="mt-6 flex flex-col md:flex-row items-center md:justify-between gap-3">
                         <span className="text-2xl font-bold text-purple-600">${product.price}</span>
-                        <button className="px-6 py-3 bg-purple-600 text-white rounded-xl font-medium shadow-md hover:bg-purple-700 transition">
-                            Купить
+                        <button
+                            onClick={handleBuy}
+                            disabled={buying}
+                            className={`px-6 py-3 bg-purple-600 text-white rounded-xl font-medium shadow-md hover:bg-purple-700 transition ${buying ? "opacity-50 cursor-not-allowed" : ""
+                                }`}
+                        >
+                            {buying ? "Покупка..." : "Купить"}
                         </button>
                     </div>
+                    {buyError && <p className="mt-2 text-red-600 text-sm">{buyError}</p>}
                 </div>
             </div>
 
@@ -108,7 +134,6 @@ const ProductDetail = () => {
                 </div>
             )}
         </div>
-
     )
 }
 

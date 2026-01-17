@@ -20,6 +20,9 @@ export const getAllProductsForShop = (page = 1, pageSize = 10, shopId) =>
 export const getProductById = (id) =>
     api.get(`/product/${id}`)
 
+export const updateProduct = (id, data) =>
+    api.patch(`/product/${id}/edit`, data)
+
 export const addProduct = (data) =>
     api.post(`/product`, data)
 

@@ -17,5 +17,7 @@
         public Guid ShopId { get; set; }
 
         public virtual Shop? Shop { get; set; }
+
+        public virtual List<ProductCategories>? Categories { get; set; }
     }
 }

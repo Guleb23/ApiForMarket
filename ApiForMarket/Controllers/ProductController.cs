@@ -71,7 +71,7 @@ namespace ApiForMarket.Controllers
                 Img = photo
             };
 
-            var createdProduct = await _productService.CreateProduct(data, shopId);
+            var createdProduct = await _productService.CreateProduct(data, shopId, dto.SelectedCategoryIds);
 
             return createdProduct != null ? Ok(createdProduct) : BadRequest();
         }

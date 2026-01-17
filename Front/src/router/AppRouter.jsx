@@ -18,6 +18,12 @@ import ModeratorLayout from "../components/layouts/ModeratorLayout"
 import ModerationProducts from "../components/ui/Moderator/ModerationProducts"
 import ModerationShops from "../components/ui/Moderator/ModerationShops"
 import ModeratorRedirect from "../components/route/ModeratorRedirect"
+import OrderDetail from "../pages/OrderDetail"
+import ProfileLayout from "../components/layouts/ProfileLayout"
+import MyProfile from "../pages/Profle/MyProfile"
+import MyOrders from "../pages/Profle/MyOrders"
+import MyShop from "../pages/Profle/MyShop"
+import Settings from "../pages/Profle/Settings"
 
 const AppRouter = () => {
     return (
@@ -47,9 +53,16 @@ const AppRouter = () => {
             }>
                 <Route path="/shop/:shopId" element={<ShopDetail />} />
                 <Route path="/product/:productId" element={<ProductDetail />} />
-                <Route path="/profile" element={<Profile />} />
+                <Route path="/profile" element={<ProfileLayout />}>
+                    <Route index element={<MyProfile />} />
+                    <Route path="orders" element={<MyOrders />} />
+                    <Route path="shop" element={<MyShop />} />
+                    <Route path="settings" element={<Settings />} />
+                </Route>
                 <Route path="/shop/create" element={<CreateShop />} />
+                <Route path="/order/:orderId" element={<OrderDetail />} />
                 <Route path="/shop/:shopId/add-product" element={<CreateProduct />} />
+                <Route path="/shop/:shopId/product/:productId/edit" element={<CreateProduct />} />
             </Route>
 
             {/* Роуты модератора */}
@@ -58,10 +71,8 @@ const AppRouter = () => {
                     <ModeratorLayout />
                 </ModeratorRoute>
             }>
-                {/* По умолчанию редирект на продукты или магазины */}
                 <Route index element={<Navigate to="products" replace />} />
 
-                {/* Две основные страницы модератора */}
                 <Route path="shops" element={<ModerationShops />} />
                 <Route path="products" element={<ModerationProducts />} />
             </Route>

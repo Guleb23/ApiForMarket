@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useCallback } from "react"
+import React, { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { FiArrowLeft } from "react-icons/fi"
-import { getAllProductsForShop, getProductById } from "../api/products"
+import { getAllProductsForShop } from "../api/products"
 import { getShopById } from "../api/shops"
 import { isOwned } from "../api/profile"
 import { useAuth } from "../context/AuthContext"
@@ -16,9 +16,7 @@ const ShopDetail = () => {
     const [shop, setShop] = useState(null)
     const [products, setProducts] = useState([])
     const [isOwner, setIsOwner] = useState(false)
-    const [loadingShop, setLoadingShop] = useState(true)
-    const [loadingProducts, setLoadingProducts] = useState(false)
-    const [loadingOwnership, setLoadingOwnership] = useState(false)
+    const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState(null)
 
     // Пагинация
@@ -26,204 +24,115 @@ const ShopDetail = () => {
     const [pageSize] = useState(12)
     const [totalPages, setTotalPages] = useState(1)
 
-    // Флаг для отслеживания монтирования компонента
-    const [isMounted, setIsMounted] = useState(true)
-
-    // Очистка при размонтировании
+    // Загрузка данных магазина
     useEffect(() => {
-        return () => {
-            setIsMounted(false)
-        }
-    }, [])
-
-    // Проверка владения магазином
-    const checkOwnership = useCallback(async (currentShopId) => {
-        if (!currentShopId || !user) {
-            setIsOwner(false)
-            return false
-        }
-
-        try {
-            setLoadingOwnership(true)
-            console.log("Проверка владения магазином:", currentShopId)
-
-            const res = await isOwned(currentShopId)
-            console.log("Результат проверки владения:", res.data)
-
-            let ownerStatus = false
-
-            if (res.data && typeof res.data.canAddProduct !== 'undefined') {
-                ownerStatus = res.data.canAddProduct
-            } else if (res.data && typeof res.data.isOwned !== 'undefined') {
-                ownerStatus = res.data.isOwned
-            } else if (res.data === true || res.data === false) {
-                ownerStatus = res.data
-            } else {
-                console.warn('Неожиданный формат ответа от isOwned:', res.data)
-                ownerStatus = false
+        const loadShopData = async () => {
+            if (!shopId) {
+                setError("Магазин не найден")
+                setIsLoading(false)
+                return
             }
 
-            if (isMounted) {
-                setIsOwner(ownerStatus)
-            }
-
-            return ownerStatus
-        } catch (err) {
-            console.error('Ошибка при проверке владения:', err)
-            console.error('Ответ ошибки:', err.response)
-
-            if (isMounted) {
-                setIsOwner(false)
-            }
-            return false
-        } finally {
-            if (isMounted) {
-                setLoadingOwnership(false)
-            }
-        }
-    }, [user, isMounted])
-
-    // Функция для загрузки товаров (разная логика для владельца и не владельца)
-    const fetchProductsData = useCallback(async (currentShopId, currentPage = 1, isShopOwner = false) => {
-        if (!currentShopId || !isMounted) return
-
-        try {
-            setLoadingProducts(true)
-            console.log(`Загрузка товаров для магазина ${currentShopId}, страница ${currentPage}, владелец: ${isShopOwner}`)
-
-            let productsData = []
-            let totalPagesCount = 1
-
-            if (isShopOwner) {
-                // Владелец - загружаем все товары с пагинацией
-                const res = await getAllProductsForShop(currentPage, pageSize, currentShopId)
-                console.log("Ответ от getAllProductsForShop:", res.data)
-
-                productsData = res.data.items || []
-                totalPagesCount = res.data.totalPages || 1
-            } else {
-                // Не владелец - загружаем только опубликованные товары
-                // Предполагаем, что API возвращает только товары с isModerated = 2
-                const res = await getAllProductsForShop(currentPage, pageSize, currentShopId)
-                console.log("Ответ от getAllProductsForShop (публичные):", res.data)
-
-                // Фильтруем только опубликованные товары
-                productsData = (res.data.items || []).filter(product =>
-                    product.isModerated === 2 || product.isModerated === undefined
-                )
-                totalPagesCount = res.data.totalPages || 1
-            }
-
-            if (isMounted) {
-                setProducts(productsData)
-                setTotalPages(totalPagesCount)
-                console.log("Товары успешно загружены:", productsData.length, "шт.")
-            }
-        } catch (err) {
-            console.error("Ошибка при загрузке товаров:", err)
-            console.error("Статус ошибки:", err.response?.status)
-            console.error("Данные ошибки:", err.response?.data)
-
-            if (isMounted) {
-                if (err.response?.status === 401) {
-                    // Пользователь не авторизован - показываем пустой список
-                    setProducts([])
-                    console.warn("Пользователь не авторизован, показываем пустой список товаров")
-                } else if (err.response?.status === 404) {
-                    setProducts([])
-                    console.warn("Магазин не найден или товаров нет")
-                } else {
-                    setError(err.response?.data?.message || "Ошибка при загрузке товаров")
-                }
-            }
-        } finally {
-            if (isMounted) {
-                setLoadingProducts(false)
-            }
-        }
-    }, [pageSize, isMounted])
-
-    // Загрузка информации о магазине и проверка владения
-    useEffect(() => {
-        if (!shopId) {
-            setError("Магазин не найден")
-            setLoadingShop(false)
-            return
-        }
-
-        const fetchShopData = async () => {
             try {
+                setIsLoading(true)
                 setError(null)
-                setLoadingShop(true)
 
                 console.log("Загрузка информации о магазине:", shopId)
+
+                // 1. Загружаем информацию о магазине
                 const shopRes = await getShopById(shopId)
-                console.log("Информация о магазине получена:", shopRes.data)
+                setShop(shopRes.data)
+                console.log("Магазин загружен:", shopRes.data)
 
-                if (isMounted) {
-                    setShop(shopRes.data)
-                    setLoadingShop(false)
+                // 2. Проверяем владение магазином
+                try {
+                    const ownershipRes = await isOwned(shopId)
+                    console.log("Результат проверки владения:", ownershipRes.data)
 
-                    // Проверяем владение магазином
-                    console.log("Проверяем владение магазином...")
-                    const ownerStatus = await checkOwnership(shopId)
+                    let ownerStatus = false
+                    if (ownershipRes.data && typeof ownershipRes.data.canAddProduct !== 'undefined') {
+                        ownerStatus = ownershipRes.data.canAddProduct
+                    } else if (ownershipRes.data && typeof ownershipRes.data.isOwned !== 'undefined') {
+                        ownerStatus = ownershipRes.data.isOwned
+                    } else if (ownershipRes.data === true || ownershipRes.data === false) {
+                        ownerStatus = ownershipRes.data
+                    }
 
-                    // Загружаем товары в зависимости от прав
-                    console.log("Загружаем товары (владелец:", ownerStatus, ")...")
-                    await fetchProductsData(shopId, page, ownerStatus)
+                    setIsOwner(ownerStatus)
+                    console.log("Статус владельца:", ownerStatus)
+
+                } catch (ownershipErr) {
+                    console.warn("Ошибка при проверке владения:", ownershipErr)
+                    setIsOwner(false)
                 }
+
             } catch (err) {
                 console.error("Ошибка при загрузке магазина:", err)
-                console.error("Статус ошибки:", err.response?.status)
+                if (err.response?.status === 401) {
+                    setError("Необходима авторизация")
+                } else if (err.response?.status === 404) {
+                    setError("Магазин не найден")
+                } else {
+                    setError(err.response?.data?.message || "Ошибка при загрузке магазина")
+                }
+            } finally {
+                setIsLoading(false)
+            }
+        }
 
-                if (isMounted) {
-                    if (err.response?.status === 401) {
-                        setError("Необходима авторизация")
-                    } else if (err.response?.status === 404) {
-                        setError("Магазин не найден")
-                    } else {
-                        setError(err.response?.data?.message || "Ошибка при загрузке магазина")
-                    }
-                    setLoadingShop(false)
+        loadShopData()
+    }, [shopId])
+
+    // Загрузка товаров (отдельный эффект)
+    useEffect(() => {
+        const loadProducts = async () => {
+            if (!shopId || !shop) return // Ждем загрузки shop
+
+            try {
+                console.log(`Загрузка товаров для магазина ${shopId}, страница ${page}`)
+
+                const res = await getAllProductsForShop(page, pageSize, shopId)
+                console.log("Товары получены:", res.data)
+
+                // Фильтруем товары в зависимости от прав
+                let filteredProducts = res.data.items || []
+
+                if (!isOwner) {
+                    // Для не-владельцев показываем только опубликованные товары
+                    filteredProducts = filteredProducts.filter(product =>
+                        product.isModerated === 2 || product.isModerated === undefined
+                    )
+                }
+
+                setProducts(filteredProducts)
+                setTotalPages(res.data.totalPages || 1)
+
+            } catch (err) {
+                console.error("Ошибка при загрузке товаров:", err)
+                if (err.response?.status === 401 || err.response?.status === 404) {
+                    setProducts([]) // Пользователь не авторизован или товаров нет
                 }
             }
         }
 
-        fetchShopData()
-    }, [shopId, isMounted, checkOwnership, fetchProductsData, page])
+        loadProducts()
+    }, [shopId, shop, page, isOwner, pageSize])
 
-    // Общая загрузка
-    const isLoading = loadingShop || (loadingProducts && products.length === 0) || loadingOwnership
+    // Обработчик клика по товару
+    const handleProductClick = (productId) => {
+        navigate(`/product/${productId}`)
+    }
 
-    // Добавим отладочную информацию в консоль
-    useEffect(() => {
-        console.log("Текущее состояние:", {
-            shopId,
-            shop: shop?.name,
-            productsCount: products.length,
-            isOwner,
-            loadingShop,
-            loadingProducts,
-            loadingOwnership,
-            page,
-            totalPages
-        })
-    }, [shopId, shop, products, isOwner, loadingShop, loadingProducts, loadingOwnership, page, totalPages])
-
-    // Обработчик для загрузки конкретного товара
-    const handleProductClick = async (productId) => {
-        try {
-            const res = await getProductById(productId)
-            console.log("Данные товара:", res.data)
-            // Здесь можно обработать данные товара, например, открыть модальное окно
-            // или перейти на страницу товара
-            navigate(`/product/${productId}`)
-        } catch (err) {
-            console.error("Ошибка при загрузке товара:", err)
-            setError("Не удалось загрузить информацию о товаре")
+    // Обработчик смены страницы
+    const handlePageChange = (newPage) => {
+        if (newPage !== page) {
+            setPage(newPage)
+            // Прокрутка вверх
+            window.scrollTo({ top: 0, behavior: 'smooth' })
         }
     }
 
+    // Отображение ошибок
     if (error && !shop) {
         return (
             <div className="flex flex-col items-center justify-center h-[60vh] text-red-600">
@@ -246,7 +155,8 @@ const ShopDetail = () => {
         )
     }
 
-    if (isLoading) {
+    // Отображение загрузки
+    if (isLoading && !shop) {
         return (
             <div className="flex items-center justify-center h-[60vh]">
                 <div className="text-center">
@@ -350,7 +260,7 @@ const ShopDetail = () => {
             {/* CONTENT */}
             <div className="max-w-7xl mx-auto px-6 pt-20 pb-8">
                 <div className="rounded-3xl bg-white shadow-xl border border-gray-200 p-8 space-y-6">
-                    {loadingProducts && products.length === 0 ? (
+                    {isLoading ? (
                         <div className="flex justify-center py-12">
                             <div className="text-center">
                                 <div className="w-10 h-10 border-3 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto"></div>
@@ -359,7 +269,6 @@ const ShopDetail = () => {
                         </div>
                     ) : products.length > 0 ? (
                         <>
-                            {/* Передаем функцию handleProductClick в ProductList */}
                             <ProductList
                                 products={products}
                                 onProductClick={handleProductClick}
@@ -371,11 +280,7 @@ const ShopDetail = () => {
                                     <Pagination
                                         currentPage={page}
                                         totalPages={totalPages}
-                                        onPageChange={(p) => {
-                                            setPage(p)
-                                            // Прокрутка вверх при смене страницы
-                                            window.scrollTo({ top: 0, behavior: 'smooth' })
-                                        }}
+                                        onPageChange={handlePageChange}
                                     />
                                 </div>
                             )}
@@ -396,12 +301,6 @@ const ShopDetail = () => {
                                     Добавить первый товар
                                 </button>
                             )}
-                        </div>
-                    )}
-
-                    {loadingProducts && products.length > 0 && (
-                        <div className="flex justify-center">
-                            <div className="w-6 h-6 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
                         </div>
                     )}
                 </div>
